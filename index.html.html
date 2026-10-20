@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Keuangan & SPP - TK IT Cendana Asih II</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1F4E78;
+            --secondary-color: #2E75B6;
+            --accent-color: #FFC000;
+        }
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            background-color: var(--primary-color);
+            color: white;
+            min-height: 100vh;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        .card-stat {
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.2s;
+        }
+        .card-stat:hover {
+            transform: translateY(-3px);
+        }
+        .print-area {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableReceipt, #printableReceipt * {
+                visibility: visible;
+            }
+            #printableReceipt {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+            <div class="text-center mb-4 mt-2">
+                <i class="fa-solid fa-school-flag fa-2x mb-2 text-warning"></i>
+                <h5>TK IT CENDANA ASIH II</h5>
+                <small class="text-white-50">Manajemen Keuangan & SPP</small>
+            </div>
+            <hr class="border-secondary">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" onclick="showSection('dashboard', event)"><i class="fa-solid fa-chart-pie me-2"></i> Dasbor & Grafik</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('paymentForm', event)"><i class="fa-solid fa-cash-register me-2"></i> Input Pembayaran</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('expenseForm', event)"><i class="fa-solid fa-wallet me-2"></i> Biaya Pengeluaran</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('studentList', event)"><i class="fa-solid fa-users me-2"></i> Data & Edit Siswa</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('history', event)"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Riwayat & Rincian</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            
+            <!-- TOP BAR -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h3" id="pageTitle">Dasbor & Grafik Keuangan</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <span class="badge bg-primary fs-6 p-2">Tahun Ajaran: 2026/2027</span>
+                </div>
+            </div>
+
+            <!-- SECTION: DASHBOARD -->
+            <div id="section-dashboard" class="app-section">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card card-stat shadow-sm p-3">
+                            <div class="text-muted small">Total Siswa Aktif</div>
+                            <h3 class="fw-bold mt-1 text-primary" id="statTotalSiswa">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat shadow-sm p-3">
+                            <div class="text-muted small">Total Pemasukan Kas</div>
+                            <h3 class="fw-bold mt-1 text-success" id="statTotalKas">Rp 0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat shadow-sm p-3">
+                            <div class="text-muted small">Total Pengeluaran</div>
+                            <h3 class="fw-bold mt-1 text-danger" id="statTotalExpense">Rp 0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat shadow-sm p-3">
+                            <div class="text-muted small">Saldo Kas Bersih</div>
+                            <h3 class="fw-bold mt-1 text-warning" id="statNetBalance">Rp 0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="row mb-4">
+                    <div class="col-lg-8 mb-3">
+                        <div class="card shadow-sm p-4">
+                            <h5 class="text-primary mb-3"><i class="fa-solid fa-chart-line me-2"></i> Grafik Arus Kas Masuk Bulanan</h5>
+                            <canvas id="cashflowChart" height="120"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <div class="card shadow-sm p-4">
+                            <h5 class="text-primary mb-3"><i class="fa-solid fa-chart-pie me-2"></i> Proporsi Pendapatan</h5>
+                            <canvas id="revenuePieChart" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: PAYMENT FORM -->
+            <div id="section-paymentForm" class="app-section" style="display:none;">
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card shadow-sm p-4 mb-4">
+                            <h5 class="mb-3 text-primary"><i class="fa-solid fa-cash-register me-2"></i> Form Pembayaran & Tambahan Iuran</h5>
+                            <form id="paymentFormElem" onsubmit="processPayment(event)">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Pilih Siswa (Cari Nama atau NIS)</label>
+                                    <select class="form-select" id="selectStudent" required onchange="onStudentSelected()">
+                                        <option value="">-- Pilih Siswa --</option>
+                                    </select>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">No. Induk (NIS)</label>
+                                        <input type="text" class="form-control" id="inputNis" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Kelas</label>
+                                        <input type="text" class="form-control" id="inputKelas" readonly>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Jenis Pembayaran</label>
+                                        <select class="form-select" id="inputJenisBayar" onchange="onJenisBayarChange()">
+                                            <option value="SPP Bulanan">SPP Bulanan</option>
+                                            <option value="Iuran Kegiatan">Iuran Kegiatan</option>
+                                            <option value="Dana POMG">Dana POMG</option>
+                                            <option value="Seragam / Atribut">Seragam / Atribut</option>
+                                            <option value="Lainnya">Lainnya / Tambahan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Bulan Tagihan (Khusus SPP)</label>
+                                        <select class="form-select" id="inputBulan">
+                                            <option value="-">-- Bukan SPP Bulanan --</option>
+                                            <option value="Juli">Juli</option>
+                                            <option value="Agustus">Agustus</option>
+                                            <option value="September">September</option>
+                                            <option value="Oktober" selected>Oktober</option>
+                                            <option value="November">November</option>
+                                            <option value="Desember">Desember</option>
+                                            <option value="Januari">Januari</option>
+                                            <option value="Februari">Februari</option>
+                                            <option value="Maret">Maret</option>
+                                            <option value="April">April</option>
+                                            <option value="Mei">Mei</option>
+                                            <option value="Juni">Juni</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-success">Nominal Pembayaran / Cicilan (Rp)</label>
+                                    <input type="number" class="form-control" id="inputNominal" required placeholder="Contoh: 200000">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Keterangan Tambahan</label>
+                                    <input type="text" class="form-control" id="inputKeterangan" placeholder="Misal: Cicilan ke-1 SPP / Pembayaran Seragam">
+                                </div>
+                                <button type="submit" class="btn btn-success w-100 py-2 fw-bold"><i class="fa-solid fa-check me-2"></i> Proses & Simpan Pembayaran</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Receipt Preview -->
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm p-4 print-area" id="printableReceipt">
+                            <div class="text-center border-bottom pb-3 mb-3">
+                                <h5 class="fw-bold text-primary mb-1">TK IT CENDANA ASIH II</h5>
+                                <small class="text-muted">Majalaya, Karawang<br>KWITANSI PEMBAYARAN RESMI</small>
+                            </div>
+                            <div id="receiptContent">
+                                <p class="text-muted text-center py-4">Belum ada transaksi yang diproses pada sesi ini.</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-primary w-100 mt-3" onclick="window.print()"><i class="fa-solid fa-print me-2"></i> Cetak Kwitansi</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: EXPENSE FORM -->
+            <div id="section-expenseForm" class="app-section" style="display:none;">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm p-4 mb-4">
+                            <h5 class="mb-3 text-danger"><i class="fa-solid fa-wallet me-2"></i> Input Biaya Pengeluaran Kegiatan / Operasional</h5>
+                            <form id="expenseFormElem" onsubmit="processExpense(event)">
+                                <div class="mb-3">
+                                    <label class="form-label">Tanggal Pengeluaran</label>
+                                    <input type="date" class="form-control" id="expTanggal" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Kategori / Nama Kegiatan</label>
+                                    <input type="text" class="form-control" id="expKategori" required placeholder="Misal: Kegiatan Outbound Siswa / Pembelian ATK / Konsumsi Rapat">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-danger">Nominal Pengeluaran (Rp)</label>
+                                    <input type="number" class="form-control" id="expNominal" required placeholder="Contoh: 500000">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Keterangan / Catatan Pengeluaran</label>
+                                    <textarea class="form-control" id="expKet" rows="2" placeholder="Rincian penggunaan dana..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-danger w-100 py-2 fw-bold"><i class="fa-solid fa-floppy-disk me-2"></i> Simpan Data Pengeluaran</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm p-4">
+                            <h5 class="text-danger mb-3"><i class="fa-solid fa-list-check me-2"></i> Rekapitulasi Pengeluaran</h5>
+                            <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-danger">
+                                        <tr>
+                                            <th>Tanggal</th>
+                                            <th>Kegiatan / Kategori</th>
+                                            <th>Nominal</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expenseTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: STUDENT LIST & EDIT -->
+            <div id="section-studentList" class="app-section" style="display:none;">
+                <div class="card shadow-sm p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="text-primary mb-0"><i class="fa-solid fa-users me-2"></i> Data & Edit Siswa TK IT Cendana Asih II</h5>
+                        <button class="btn btn-success btn-sm" onclick="openAddStudentModal()"><i class="fa-solid fa-user-plus me-1"></i> Tambah Siswa Baru</button>
+                    </div>
+                    <div class="input-group mb-3 w-50">
+                        <input type="text" class="form-control" id="searchStudentInput" placeholder="Cari Nama atau NIS..." onkeyup="filterStudents()">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>No.</th>
+                                    <th>NIS</th>
+                                    <th>Nama Siswa</th>
+                                    <th>Kelas</th>
+                                    <th>Tarif SPP</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: HISTORY & DETAILED SUMMARY -->
+            <div id="section-history" class="app-section" style="display:none;">
+                <div class="card shadow-sm p-4 mb-4">
+                    <h5 class="text-primary mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Riwayat Transaksi & Rincian Pembayaran</h5>
+                    
+                    <!-- Summary Cards by Category -->
+                    <div class="row g-3 mb-4" id="categorySummaryCards">
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>No. TRX</th>
+                                    <th>Tanggal</th>
+                                    <th>NIS</th>
+                                    <th>Nama Siswa</th>
+                                    <th>Kelas</th>
+                                    <th>Jenis Pembayaran</th>
+                                    <th>Bulan</th>
+                                    <th>Nominal</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Modal Edit / Add Student -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="studentModalTitle">Tambah / Edit Data Siswa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="studentForm" onsubmit="saveStudent(event)">
+            <input type="hidden" id="editIndex" value="-1">
+            <div class="mb-3">
+                <label class="form-label">No. Induk (NIS)</label>
+                <input type="text" class="form-control" id="modalNis" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Nama Lengkap Siswa</label>
+                <input type="text" class="form-control" id="modalNama" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Kelas</label>
+                <select class="form-select" id="modalKelas" required>
+                    <option value="KOBER 1 - IBNU SINA">KOBER 1 - IBNU SINA</option>
+                    <option value="KOBER 2 - AL-KINDI">KOBER 2 - AL-KINDI</option>
+                    <option value="A 1 - AL-BIRUNI">A 1 - AL-BIRUNI</option>
+                    <option value="A 2 - AL-FARABI">A 2 - AL-FARABI</option>
+                    <option value="A 3 - AL-JAZARI">A 3 - AL-JAZARI</option>
+                    <option value="A 4 - IBNU KHALDUN">A 4 - IBNU KHALDUN</option>
+                    <option value="B 1 - AL-KAWARIZMI">B 1 - AL-KAWARIZMI</option>
+                    <option value="B 2 - AL-BATTANI">B 2 - AL-BATTANI</option>
+                    <option value="B 3 - JABIR IBN HAYYAN">B 3 - JABIR IBN HAYYAN</option>
+                    <option value="B 4 - NASIR AL-DIN AL-TUSI">B 4 - NASIR AL-DIN AL-TUSI</option>
+                    <option value="B 5 - UMAR KHAYYAM">B 5 - UMAR KHAYYAM</option>
+                    <option value="B 6 - IBNU AL-HAYTHAM">B 6 - IBNU AL-HAYTHAM</option>
+                    <option value="B 7 - AL-ZAHRAWI">B 7 - AL-ZAHRAWI</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tarif SPP Bulanan (Rp)</label>
+                <input type="number" class="form-control" id="modalTarif" value="200000" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Simpan Data Siswa</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let studentsData = [{"no": 1, "nis": "2026055", "nama": "ADAM RIZQI", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 2, "nis": "2026001", "nama": "ADEEVA YASNA UMAIZA", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 3, "nis": "2026048", "nama": "ADIPATI NEGARA KOESMIPRIADY", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 4, "nis": "2026056", "nama": "ADZKIYA DYRA KURNIAWAN", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 5, "nis": "2026014", "nama": "AENIAH ROHMATIN NAZILAH", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 6, "nis": "2026034", "nama": "AFIFAH FATIMAH MUMTAZAH", "kelas": "KOBER 2 - AL-KINDI", "tarif": 200000.0}, {"no": 7, "nis": "2026088", "nama": "AIRA NABEELA TANISHA", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 8, "nis": "2026002", "nama": "ALEA ZIA NAFIZA", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 9, "nis": "2026064", "nama": "ALESHA MUTIARA", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 10, "nis": "2026039", "nama": "ALVARO GENTALA MANALU", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 11, "nis": "2026040", "nama": "ALZHIO SHAQUILLE ISMAIL", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 12, "nis": "2026089", "nama": "ANDARA SOFIA", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 13, "nis": "2026021", "nama": "ANINDIRA ZIVANA AFSHEEN", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 14, "nis": "2026065", "nama": "ANINDYA ULFATUNISA", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 15, "nis": "2026010", "nama": "ANNASYA ARSYFA", "kelas": "KOBER 1 - IBNU SINA", "tarif": 200000.0}, {"no": 16, "nis": "2026057", "nama": "ARIYA RIZKI", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 17, "nis": "2026066", "nama": "ARJUNA AINUN NAJIB", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 18, "nis": "2026028", "nama": "ARSEN ABQARY HAFIE", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 19, "nis": "2026058", "nama": "ARSENIO ZYROUN ASEGAF WIJAYA", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 20, "nis": "2026083", "nama": "AZZAHRA AL KHAYRA", "kelas": "B 7 - AL-ZAHRAWI", "tarif": 200000.0}, {"no": 21, "nis": "2026015", "nama": "AZZAM ALFARIZI", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 22, "nis": "2026074", "nama": "CAKRAWANGSA RYU SUSANTO", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 23, "nis": "2026090", "nama": "CHIA SYAKURA FIRDAUS", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 24, "nis": "2026022", "nama": "DANADYAKSA ARFAN ATHAYA KENZO", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 25, "nis": "2026023", "nama": "DELIA QIANA YANSYAH", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 26, "nis": "2026011", "nama": "DEYNARA NADHIRA ROHMANSYAH", "kelas": "KOBER 1 - IBNU SINA", "tarif": 200000.0}, {"no": 27, "nis": "2026041", "nama": "DHEVAN ISKANDAR AL KAUTSAR", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 28, "nis": "2026059", "nama": "DINI AULYA SEPTIANI", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 29, "nis": "2026067", "nama": "DITA SRI LESTARI", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 30, "nis": "2026068", "nama": "ELRAMDAN PUTRA ARRASY", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 31, "nis": "2026012", "nama": "FATHARIAN GIANDRA ANGGARAKSA", "kelas": "KOBER 1 - IBNU SINA", "tarif": 200000.0}, {"no": 32, "nis": "2026069", "nama": "FELICIA KIREINA WIDIARSO", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 33, "nis": "2026075", "nama": "FELICIA NABILA PARVEEN", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 34, "nis": "2026076", "nama": "GHAISAN RAFFASYA", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 35, "nis": "2026035", "nama": "GHANIYA ATEEFA KAMISHA", "kelas": "KOBER 2 - AL-KINDI", "tarif": 200000.0}, {"no": 36, "nis": "2026091", "nama": "HAAFLA ALTHAFFATHAN", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 37, "nis": "2026084", "nama": "HABIB PRATAMA", "kelas": "B 7 - AL-ZAHRAWI", "tarif": 200000.0}, {"no": 38, "nis": "2026016", "nama": "HAZNA SABRINA FARZANA", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 39, "nis": "2026070", "nama": "HILMAN FARID ABISATYA", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 40, "nis": "2026024", "nama": "INDIRA SHAFIRA AS-SYFA", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 41, "nis": "2026085", "nama": "IRSYAD AL ABQARI APENDI", "kelas": "B 7 - AL-ZAHRAWI", "tarif": 200000.0}, {"no": 42, "nis": "2026049", "nama": "IZLINA ZEIN ATTAKI", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 43, "nis": "2026060", "nama": "JIHAN KHALISA IRAWAN", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 44, "nis": "2026077", "nama": "KANZA ZAHIRA", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 45, "nis": "2026078", "nama": "KEENAN TRISTIAN", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 46, "nis": "2026079", "nama": "KENZIE ALFANO", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 47, "nis": "2026025", "nama": "KENZIE ARKATAMA ALLATIF AHMAD", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 48, "nis": "2026029", "nama": "KHAIZEN ARASYA GAZELLE", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 49, "nis": "2026042", "nama": "KHALISA IZZATUNNISA SALSABILA", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 50, "nis": "2026050", "nama": "MAHESA AIRLANGGA", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 51, "nis": "2026003", "nama": "MAIRA ARRAHMA HUSSEIN", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 52, "nis": "2026030", "nama": "MALAIQA KHADIJAH", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 53, "nis": "2026092", "nama": "MALIZA ARRAZI DHIALIRRAHMAN", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 54, "nis": "2026051", "nama": "MARSYA NAURA PURNADI", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 55, "nis": "2026017", "nama": "MUHAMMAD ABIZARD ALFARIZKI", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 56, "nis": "2026026", "nama": "MUHAMMAD ADLAN ALQAES", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 57, "nis": "2026093", "nama": "MUHAMMAD AFFAN PUTRA ANSHORI", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 58, "nis": "2026018", "nama": "MUHAMMAD ARSHAKA ALFARIZQI", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 59, "nis": "2026052", "nama": "MUHAMMAD EMRE CAUEF", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 60, "nis": "2026031", "nama": "MUHAMMAD HISHAM MUHADZIB", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 61, "nis": "2026043", "nama": "MUHAMMAD RAFIF ALFAREZI", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 62, "nis": "2026071", "nama": "MUHAMMAD RAFKA FATHAN ALFARIZQ", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 63, "nis": "2026004", "nama": "MUHAMMAD YUSUF ARKANA", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 64, "nis": "2026094", "nama": "NABILA SYAFA AGUSTIN", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 65, "nis": "2026036", "nama": "NABRIEL HANAN KHALIFI", "kelas": "KOBER 2 - AL-KINDI", "tarif": 200000.0}, {"no": 66, "nis": "2026044", "nama": "NADHIF ELFATHAN RAFAEYZA", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 67, "nis": "2026072", "nama": "NADHIF KHIAR RAMADHAN", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 68, "nis": "2026045", "nama": "NADIFA ADZKIYA NAHDA", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 69, "nis": "2026061", "nama": "NADIR RADEYA AKBAR", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 70, "nis": "2026032", "nama": "NAOMI GENDHIS SHANAYA", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 71, "nis": "2026086", "nama": "NICKO ARSENIO PUTRA", "kelas": "B 7 - AL-ZAHRAWI", "tarif": 200000.0}, {"no": 72, "nis": "2026062", "nama": "QIANA INTAN ALESHA", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 73, "nis": "2026005", "nama": "RAFA RADEN FAJARIANTO", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 74, "nis": "2026053", "nama": "RAHSYA RAFARDHAN APRIANTO", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 75, "nis": "2026080", "nama": "RAYYANZA AXELLE SUCAHYONO", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 76, "nis": "2026033", "nama": "RIVANKA AZHAR ALKHALIFI", "kelas": "A 2 - AL-FARABI", "tarif": 200000.0}, {"no": 77, "nis": "2026006", "nama": "RIZQI ATHAAR ARRAFIF", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 78, "nis": "2026019", "nama": "RUSYDAN BAKHRUL ULUM", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 79, "nis": "2026020", "nama": "RYOKA KAHFI KURNIAWAN", "kelas": "A 1 - AL-BIRUNI", "tarif": 200000.0}, {"no": 80, "nis": "2026007", "nama": "RYUICHI ACHMAD TSABIT JUNIARTO", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 81, "nis": "2026013", "nama": "RYUZAKI SYAFIQAL HARTONO", "kelas": "KOBER 1 - IBNU SINA", "tarif": 200000.0}, {"no": 82, "nis": "2026095", "nama": "SABILAN NALENDRA", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 83, "nis": "2026081", "nama": "SALMAN KAUTSAR ABDILLAH", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 84, "nis": "2026063", "nama": "SALVIO FUSENA MANALU", "kelas": "B 2 - AL-BATTANI", "tarif": 200000.0}, {"no": 85, "nis": "2026096", "nama": "SAYYIDAH AYLA NADHIRA ELKOMI", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 86, "nis": "2026008", "nama": "SHAZIVA ALMAHYRA NAUREEN RIANTA", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 87, "nis": "2026082", "nama": "SHEZA ULAYYA ASYARI", "kelas": "B 4 - NASIR AL-DIN AL-TUSI", "tarif": 200000.0}, {"no": 88, "nis": "2026046", "nama": "SUCI AENIN NABILLA", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 89, "nis": "2026037", "nama": "SYAHNAZ AGNI MAHISYAH", "kelas": "KOBER 2 - AL-KINDI", "tarif": 200000.0}, {"no": 90, "nis": "2026047", "nama": "SYAQILA NOURA ADZKIYA", "kelas": "B 3 - JABIR IBN HAYYAN", "tarif": 200000.0}, {"no": 91, "nis": "2026027", "nama": "TSABIT SHIDDIQ AL-QARNI", "kelas": "A 4 - IBNU KHALDUN", "tarif": 200000.0}, {"no": 92, "nis": "2026097", "nama": "UMAR ZHAFRAN ALFARIZI", "kelas": "B 5 - UMAR KHAYYAM", "tarif": 200000.0}, {"no": 93, "nis": "2026054", "nama": "ZAVIAN HAFIDZATHA KAIVAN ERYU", "kelas": "A 3 - AL-JAZARI", "tarif": 200000.0}, {"no": 94, "nis": "2026073", "nama": "ZHULFYAN DIWICLAKSONO", "kelas": "B 6 - IBNU AL-HAYTHAM", "tarif": 200000.0}, {"no": 95, "nis": "2026009", "nama": "ZIAN AL BASTIAN", "kelas": "B 1 - AL-KAWARIZMI", "tarif": 200000.0}, {"no": 96, "nis": "2026087", "nama": "ZIDAN ATHALLAH", "kelas": "B 7 - AL-ZAHRAWI", "tarif": 200000.0}, {"no": 97, "nis": "2026038", "nama": "ZIVANA SHALIMA HAZZAFA", "kelas": "KOBER 2 - AL-KINDI", "tarif": 200000.0}];
+    let transactions = [
+        {trx: "TRX-2026-001", tanggal: "2026-10-15", nis: "2026055", nama: "ADAM RIZQI", kelas: "B 2 - AL-BATTANI", jenis: "SPP Bulanan", bulan: "Juli", nominal: 200000, ket: "Bayar Penuh"},
+        {trx: "TRX-2026-002", tanggal: "2026-10-16", nis: "2026001", nama: "ADEEVA YASNA UMAIZA", kelas: "B 1 - AL-KAWARIZMI", jenis: "Iuran Kegiatan", bulan: "-", nominal: 150000, ket: "Outbound Siswa"}
+    ];
+    let expenses = [
+        {id: 1, tanggal: "2026-10-10", kategori: "Kegiatan Outbound", nominal: 500000, ket: "Pembayaran bus dan tiket masuk"},
+        {id: 2, tanggal: "2026-10-12", kategori: "Pembelian ATK Sekolah", nominal: 150000, ket: "Kertas HVS dan spidol"}
+    ];
+
+    let cashflowChartInstance = null;
+    let revenuePieInstance = null;
+
+    function initApp() {
+        populateStudentDropdown();
+        renderDashboard();
+        renderStudents();
+        renderHistory();
+        renderExpenses();
+        document.getElementById('expTanggal').value = new Date().toISOString().slice(0, 10);
+    }
+
+    function populateStudentDropdown() {
+        const select = document.getElementById('selectStudent');
+        select.innerHTML = '<option value="">-- Pilih Siswa --</option>';
+        studentsData.forEach(s => {
+            let opt = document.createElement('option');
+            opt.value = s.nis;
+            opt.textContent = `${s.nis} - ${s.nama} (${s.kelas})`;
+            select.appendChild(opt);
+        });
+    }
+
+    function showSection(sectionId, event) {
+        document.querySelectorAll('.app-section').forEach(el => el.style.display = 'none');
+        document.getElementById('section-' + sectionId).style.display = 'block';
+        
+        document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+
+        const titles = {
+            'dashboard': 'Dasbor & Grafik Keuangan',
+            'paymentForm': 'Form Pembayaran & Iuran',
+            'expenseForm': 'Biaya Pengeluaran Kegiatan',
+            'studentList': 'Data & Edit Siswa',
+            'history': 'Riwayat & Rincian Pembayaran'
+        };
+        document.getElementById('pageTitle').textContent = titles[sectionId];
+        
+        if (sectionId === 'dashboard') {
+            renderCharts();
+        }
+    }
+
+    function onStudentSelected() {
+        const nis = document.getElementById('selectStudent').value;
+        const student = studentsData.find(s => s.nis === nis);
+        if (student) {
+            document.getElementById('inputNis').value = student.nis;
+            document.getElementById('inputKelas').value = student.kelas;
+            let jenis = document.getElementById('inputJenisBayar').value;
+            document.getElementById('inputNominal').value = jenis === 'SPP Bulanan' ? student.tarif : 100000;
+        } else {
+            document.getElementById('inputNis').value = '';
+            document.getElementById('inputKelas').value = '';
+            document.getElementById('inputNominal').value = '';
+        }
+    }
+
+    function onJenisBayarChange() {
+        const jenis = document.getElementById('inputJenisBayar').value;
+        const bulanSelect = document.getElementById('inputBulan');
+        const nis = document.getElementById('inputNis').value;
+        const student = studentsData.find(s => s.nis === nis);
+
+        if (jenis === 'SPP Bulanan') {
+            bulanSelect.disabled = false;
+            bulanSelect.value = 'Oktober';
+            if (student) document.getElementById('inputNominal').value = student.tarif;
+        } else {
+            bulanSelect.disabled = true;
+            bulanSelect.value = '-';
+            if (student) document.getElementById('inputNominal').value = 100000;
+        }
+    }
+
+    function processPayment(event) {
+        event.preventDefault();
+        const nis = document.getElementById('inputNis').value;
+        const student = studentsData.find(s => s.nis === nis);
+        const jenis = document.getElementById('inputJenisBayar').value;
+        const bulan = document.getElementById('inputBulan').value;
+        const nominal = parseFloat(document.getElementById('inputNominal').value);
+        const ket = document.getElementById('inputKeterangan').value || jenis;
+        
+        const trxId = "TRX-2026-" + String(transactions.length + 1).padStart(3, '0');
+        const tanggal = new Date().toISOString().slice(0, 10);
+
+        const newTrx = {
+            trx: trxId,
+            tanggal: tanggal,
+            nis: student.nis,
+            nama: student.nama,
+            kelas: student.kelas,
+            jenis: jenis,
+            bulan: bulan,
+            nominal: nominal,
+            ket: ket
+        };
+
+        transactions.unshift(newTrx);
+        renderDashboard();
+        renderHistory();
+
+        document.getElementById('receiptContent').innerHTML = `
+            <div class="small mb-2"><strong>No. TRX:</strong> ${trxId}</div>
+            <div class="small mb-2"><strong>Tanggal:</strong> ${tanggal}</div>
+            <div class="small mb-2"><strong>Nama Siswa:</strong> ${student.nama}</div>
+            <div class="small mb-2"><strong>Kelas:</strong> ${student.kelas}</div>
+            <div class="small mb-2"><strong>Jenis Pembayaran:</strong> ${jenis} ${bulan !== '-' ? '(' + bulan + ')' : ''}</div>
+            <hr>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Nominal Dibayar:</span>
+                <strong>Rp ${nominal.toLocaleString('id-ID')}</strong>
+            </div>
+            <div class="small mb-3"><strong>Keterangan:</strong> ${ket}</div>
+            <div class="text-center mt-4 text-muted small">Terima Kasih<br>Petugas Administrasi TK IT Cendana Asih II</div>
+        `;
+        alert("Pembayaran berhasil dicatat dan kwitansi siap dicetak!");
+    }
+
+    function processExpense(event) {
+        event.preventDefault();
+        const tanggal = document.getElementById('expTanggal').value;
+        const kategori = document.getElementById('expKategori').value;
+        const nominal = parseFloat(document.getElementById('expNominal').value);
+        const ket = document.getElementById('expKet').value;
+
+        const newExp = {
+            id: expenses.length + 1,
+            tanggal: tanggal,
+            kategori: kategori,
+            nominal: nominal,
+            ket: ket
+        };
+
+        expenses.unshift(newExp);
+        renderExpenses();
+        renderDashboard();
+        document.getElementById('expenseFormElem').reset();
+        document.getElementById('expTanggal').value = new Date().toISOString().slice(0, 10);
+        alert("Data pengeluaran berhasil disimpan!");
+    }
+
+    function deleteExpense(id) {
+        if (confirm("Hapus data pengeluaran ini?")) {
+            expenses = expenses.filter(e => e.id !== id);
+            renderExpenses();
+            renderDashboard();
+        }
+    }
+
+    function renderExpenses() {
+        const tbody = document.getElementById('expenseTableBody');
+        tbody.innerHTML = '';
+        expenses.forEach(e => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center small">${e.tanggal}</td>
+                    <td><strong>${e.kategori}</strong><br><small class="text-muted">${e.ket}</small></td>
+                    <td class="text-end text-danger fw-bold">Rp ${e.nominal.toLocaleString('id-ID')}</td>
+                    <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${e.id})"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderDashboard() {
+        document.getElementById('statTotalSiswa').textContent = studentsData.length;
+        let totalKas = transactions.reduce((acc, t) => acc + t.nominal, 0);
+        let totalExp = expenses.reduce((acc, e) => acc + e.nominal, 0);
+        let netBalance = totalKas - totalExp;
+
+        document.getElementById('statTotalKas').textContent = "Rp " + totalKas.toLocaleString('id-ID');
+        document.getElementById('statTotalExpense').textContent = "Rp " + totalExp.toLocaleString('id-ID');
+        document.getElementById('statNetBalance').textContent = "Rp " + netBalance.toLocaleString('id-ID');
+    }
+
+    function renderCharts() {
+        const ctx1 = document.getElementById('cashflowChart').getContext('2d');
+        if (cashflowChartInstance) cashflowChartInstance.destroy();
+
+        cashflowChartInstance = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                datasets: [{
+                    label: 'Pemasukan Kas (Rp)',
+                    data: [1200000, 1500000, 1800000, transactions.reduce((a,b)=>a+b.nominal,0), 0, 0],
+                    backgroundColor: '#2E75B6',
+                    borderRadius: 5
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        let sppTotal = transactions.filter(t=>t.jenis==='SPP Bulanan').reduce((a,b)=>a+b.nominal,0);
+        let kegTotal = transactions.filter(t=>t.jenis==='Iuran Kegiatan').reduce((a,b)=>a+b.nominal,0);
+        let pomgTotal = transactions.filter(t=>t.jenis==='Dana POMG').reduce((a,b)=>a+b.nominal,0);
+        let serTotal = transactions.filter(t=>t.jenis==='Seragam / Atribut' || t.jenis==='Lainnya').reduce((a,b)=>a+b.nominal,0);
+
+        const ctx2 = document.getElementById('revenuePieChart').getContext('2d');
+        if (revenuePieInstance) revenuePieInstance.destroy();
+
+        revenuePieInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['SPP Bulanan', 'Iuran Kegiatan', 'Dana POMG', 'Seragam/Lainnya'],
+                datasets: [{
+                    data: [sppTotal || 200000, kegTotal || 150000, pomgTotal || 100000, serTotal || 50000],
+                    backgroundColor: ['#1F4E78', '#2E75B6', '#FFC000', '#28a745']
+                }]
+            },
+            options: { responsive: true }
+        });
+    }
+
+    function renderStudents() {
+        const tbody = document.getElementById('studentTableBody');
+        tbody.innerHTML = '';
+        studentsData.forEach((s, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center">${idx + 1}</td>
+                    <td class="text-center">${s.nis}</td>
+                    <td>${s.nama}</td>
+                    <td class="text-center">${s.kelas}</td>
+                    <td class="text-end">Rp ${s.tarif.toLocaleString('id-ID')}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditStudentModal(${idx})"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent(${idx})"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function openAddStudentModal() {
+        document.getElementById('studentModalTitle').textContent = "Tambah Siswa Baru";
+        document.getElementById('editIndex').value = -1;
+        document.getElementById('modalNis').value = "";
+        document.getElementById('modalNama').value = "";
+        document.getElementById('modalTarif').value = 200000;
+        new bootstrap.Modal(document.getElementById('studentModal')).show();
+    }
+
+    function openEditStudentModal(idx) {
+        let s = studentsData[idx];
+        document.getElementById('studentModalTitle').textContent = "Edit Data Siswa";
+        document.getElementById('editIndex').value = idx;
+        document.getElementById('modalNis').value = s.nis;
+        document.getElementById('modalNama').value = s.nama;
+        document.getElementById('modalKelas').value = s.kelas;
+        document.getElementById('modalTarif').value = s.tarif;
+        new bootstrap.Modal(document.getElementById('studentModal')).show();
+    }
+
+    function saveStudent(event) {
+        event.preventDefault();
+        let idx = parseInt(document.getElementById('editIndex').value);
+        let nis = document.getElementById('modalNis').value.trim();
+        let nama = document.getElementById('modalNama').value.trim();
+        let kelas = document.getElementById('modalKelas').value;
+        let tarif = parseFloat(document.getElementById('modalTarif').value);
+
+        if (idx === -1) {
+            studentsData.push({no: studentsData.length + 1, nis, nama, kelas, tarif});
+        } else {
+            studentsData[idx] = {...studentsData[idx], nis, nama, kelas, tarif};
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('studentModal')).hide();
+        renderStudents();
+        populateStudentDropdown();
+        alert("Data siswa berhasil disimpan!");
+    }
+
+    function deleteStudent(idx) {
+        if (confirm("Hapus data siswa ini?")) {
+            studentsData.splice(idx, 1);
+            renderStudents();
+            populateStudentDropdown();
+        }
+    }
+
+    function renderHistory() {
+        const tbody = document.getElementById('historyTableBody');
+        tbody.innerHTML = '';
+        transactions.forEach(t => {
+            tbody.innerHTML += `
+                <tr>
+                    <td class="text-center fw-bold">${t.trx}</td>
+                    <td class="text-center">${t.tanggal}</td>
+                    <td class="text-center">${t.nis}</td>
+                    <td>${t.nama}</td>
+                    <td class="text-center">${t.kelas}</td>
+                    <td class="text-center"><span class="badge bg-secondary">${t.jenis}</span></td>
+                    <td class="text-center">${t.bulan}</td>
+                    <td class="text-end fw-bold text-success">Rp ${t.nominal.toLocaleString('id-ID')}</td>
+                    <td>${t.ket}</td>
+                    <td class="text-center"><button class="btn btn-outline-danger btn-sm" onclick="deleteTrx('${t.trx}')"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `;
+        });
+
+        let types = ['SPP Bulanan', 'Iuran Kegiatan', 'Dana POMG', 'Seragam / Atribut', 'Lainnya'];
+        let container = document.getElementById('categorySummaryCards');
+        container.innerHTML = '';
+        types.forEach(type => {
+            let sum = transactions.filter(t => t.jenis === type).reduce((a, b) => a + b.nominal, 0);
+            container.innerHTML += `
+                <div class="col-md-4">
+                    <div class="card shadow-sm p-3 border-start border-primary border-3">
+                        <div class="text-muted small">Total ${type}</div>
+                        <h4 class="fw-bold text-primary mt-1">Rp ${sum.toLocaleString('id-ID')}</h4>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function deleteTrx(trxId) {
+        if (confirm("Hapus transaksi ini?")) {
+            transactions = transactions.filter(t => t.trx !== trxId);
+            renderHistory();
+            renderDashboard();
+        }
+    }
+
+    function filterStudents() {
+        let query = document.getElementById('searchStudentInput').value.toLowerCase();
+        let rows = document.querySelectorAll('#studentTableBody tr');
+        rows.forEach(row => {
+            let text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    window.onload = initApp;
+</script>
+</body>
+</html>
